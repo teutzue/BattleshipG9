@@ -22,8 +22,11 @@ public class G9AI_Smasher implements BattleshipsPlayer {
     private final static Random rnd = new Random();
     private int sizeX;
     private int sizeY;
-    private boolean hit = false;
-    private Position lastShot;
+    private int nextX;
+    private int nextY;
+    private boolean offset = false;
+    
+    
 
     public G9AI_Smasher() {
     }
@@ -31,7 +34,7 @@ public class G9AI_Smasher implements BattleshipsPlayer {
     private boolean checkCord(Position pos, Ship s, boolean vertical) {
 
         for (int i = 0; i < s.size(); i++) {
-            
+
             if (vertical) {
                 for (Position posOcupied : currentP) {
                     if (posOcupied.x == pos.x && posOcupied.y == pos.y + i) {
@@ -52,13 +55,11 @@ public class G9AI_Smasher implements BattleshipsPlayer {
     @Override
     public void placeShips(Fleet fleet, Board board) {
 
-       
         //1) Simply records the size of the board:
         sizeX = board.sizeX();
         sizeY = board.sizeY();
 
         //2) Gets each ship and places it randomly
-        
         for (int i = 0; i < fleet.getNumberOfShips(); ++i) {
             Ship s = fleet.getShip(i);
             boolean vertical = rnd.nextBoolean();
@@ -68,20 +69,27 @@ public class G9AI_Smasher implements BattleshipsPlayer {
                 int x = rnd.nextInt(sizeX);
                 int y = rnd.nextInt(sizeY - (s.size() - 1));
                 pos = new Position(x, y);
-                if ( checkCord(pos, s, true)) {
-                    board.placeShip(pos, s, vertical);    
-                }else{
-                i--;
+                if (checkCord(pos, s, true)) {
+                    board.placeShip(pos, s, vertical);
+                    for (int j = 0; j < s.size(); j++) {
+                        currentP.add(new Position(pos.x,pos.y+j));
+                    }
+                } else {
+                    i--;
                 }
 
-            } if(!vertical) {
+            }
+            if (!vertical) {
                 int x = rnd.nextInt(sizeX - (s.size() - 1));
                 int y = rnd.nextInt(sizeY);
                 pos = new Position(x, y);
-                if ( checkCord(pos, s, false)) {
-                    board.placeShip(pos, s, vertical);   
-                }else{
-                i--;
+                if (checkCord(pos, s, false)) {
+                    board.placeShip(pos, s, vertical);
+                    for (int j = 0; j < s.size(); j++) {
+                        currentP.add(new Position(pos.x+j,pos.y));
+                    }
+                } else {
+                    i--;
                 }
             }
 
@@ -98,7 +106,6 @@ public class G9AI_Smasher implements BattleshipsPlayer {
 //                    }
 //                }
 //            }
-
         }
     }
 
@@ -107,25 +114,68 @@ public class G9AI_Smasher implements BattleshipsPlayer {
 
         //Do nothing
     }
+    
+    
+    private Position systemShoot(){
+    
+    Position shot = new Position(nextX, nextY);
+        ++nextX;
+        if(nextX >= sizeX)
+        {
+            nextX = 0; 
+            ++nextY;
+            if(nextY >= sizeY)
+            {
+                nextY = 0;
+            }
+        }
+        return shot;
+    
+    
+    }
+
+    private Position hunt() {
+        
+
+        
+        Position shot = new Position(nextX, nextY);
+        nextX -= 2;
+        if (nextX <= 0 ) {
+            if (offset) {
+                nextX = 8;
+                offset=false;
+            } else {
+                nextX = 9;
+                offset=true;
+            }
+            nextY--;
+            if (nextY <= 0) {
+                nextY = 9;
+            }
+        }
+        return shot;
+
+    }
 
     @Override
     public Position getFireCoordinates(Fleet enemyShips) {
-        int x = rnd.nextInt(sizeX);
-        int y = rnd.nextInt(sizeY);
-        // Calculate next shot
-        //Safe position of variable lastShot
-        //Create shooting pattern (f.x. increment x by 2 and y by 1)
-        // hit is true use go around pattern
-        
-        
-        lastShot = new Position(x, y);
-        return lastShot;
-        
+//        int x = rnd.nextInt(sizeX);
+//        int y = rnd.nextInt(sizeY);
+//        // Calculate next shot
+//        //Safe position of variable lastShot
+//        //Create shooting pattern (f.x. increment x by 2 and y by 1)
+//        // hit is true use go around pattern
+//        
+//        
+//        lastShot = new Position(x, y);
+//        return lastShot;
+        return hunt();
+
     }
 
     @Override
     public void hitFeedBack(boolean hit, Fleet enemyShips) {
-       
+
         //if hit is true set global variable lasthit to false (true if hit)
         //Do nothing
     }
@@ -137,7 +187,8 @@ public class G9AI_Smasher implements BattleshipsPlayer {
 
     @Override
     public void startRound(int round) {
-        //Do nothing
+       nextX = 9;
+       nextY = 9;
     }
 
     @Override
