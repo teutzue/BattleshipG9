@@ -11,6 +11,7 @@ import battleship.interfaces.Board;
 import battleship.interfaces.Ship;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Stack;
 
 /**
  *
@@ -25,10 +26,19 @@ public class G9AI_Smasher implements BattleshipsPlayer {
     private int nextX;
     private int nextY;
     private boolean offset = false;
-    
-    
+
+    private Stack<Position> stack = new Stack<>();
+
+    private ArrayList<Position> previousShots;
+    private Position lastShot;
+    private boolean hit;
+    private int numShips;
+    private int previousNumShips;
 
     public G9AI_Smasher() {
+
+        previousShots = new ArrayList<>();
+
     }
 
     private boolean checkCord(Position pos, Ship s, boolean vertical) {
@@ -72,7 +82,7 @@ public class G9AI_Smasher implements BattleshipsPlayer {
                 if (checkCord(pos, s, true)) {
                     board.placeShip(pos, s, vertical);
                     for (int j = 0; j < s.size(); j++) {
-                        currentP.add(new Position(pos.x,pos.y+j));
+                        currentP.add(new Position(pos.x, pos.y + j));
                     }
                 } else {
                     i--;
@@ -86,7 +96,7 @@ public class G9AI_Smasher implements BattleshipsPlayer {
                 if (checkCord(pos, s, false)) {
                     board.placeShip(pos, s, vertical);
                     for (int j = 0; j < s.size(); j++) {
-                        currentP.add(new Position(pos.x+j,pos.y));
+                        currentP.add(new Position(pos.x + j, pos.y));
                     }
                 } else {
                     i--;
@@ -114,46 +124,95 @@ public class G9AI_Smasher implements BattleshipsPlayer {
 
         //Do nothing
     }
-    
-    
-    private Position systemShoot(){
-    
-    Position shot = new Position(nextX, nextY);
+
+    private Position systemShoot() {
+
+        Position shot = new Position(nextX, nextY);
         ++nextX;
-        if(nextX >= sizeX)
-        {
-            nextX = 0; 
+        if (nextX >= sizeX) {
+            nextX = 0;
             ++nextY;
-            if(nextY >= sizeY)
-            {
+            if (nextY >= sizeY) {
                 nextY = 0;
             }
         }
         return shot;
-    
-    
+
     }
 
     private Position hunt() {
-        
 
-        
         Position shot = new Position(nextX, nextY);
+        stack.push(shot);
+
         nextX -= 2;
-        if (nextX <= 0 ) {
-            if (offset) {
+        if (nextX < 0) {
+            if (!offset) {
                 nextX = 8;
-                offset=false;
+                offset = true;
             } else {
                 nextX = 9;
-                offset=true;
+                offset = false;
             }
             nextY--;
             if (nextY <= 0) {
                 nextY = 9;
             }
         }
-        return shot;
+
+        lastShot = shot;
+        previousShots.add(shot);
+        previousNumShips = numShips;
+        return stack.pop();
+
+    }
+
+    private boolean isNotPreviousShots(Position pos) {
+
+        for (Position posit : previousShots) {
+            if (pos.x == posit.x && pos.y == posit.y) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isValidPosition(Position pos) {
+
+        if (!(pos.x < 0) && !(pos.x > sizeX-1) && !(pos.y < 0) && !(pos.y > sizeY-1) && isNotPreviousShots(pos)) {
+
+            return true;
+
+        } else {
+            return false;
+        }
+
+    }
+
+    private Position attack() {
+
+        Position topShot = new Position(lastShot.x, lastShot.y - 1);
+        Position rightShot = new Position(lastShot.x + 1, lastShot.y);
+        Position downShot = new Position(lastShot.x, lastShot.y + 1);
+        Position leftShot = new Position(lastShot.x - 1, lastShot.y);
+        
+        if (isValidPosition(topShot)) {
+            stack.push(topShot);
+        }
+        if (isValidPosition(rightShot)) {
+            stack.push(rightShot);
+        }
+        if (isValidPosition(downShot)) {
+            stack.push(downShot);
+        }
+        if (isValidPosition(leftShot)) {
+            stack.push(leftShot);
+        }
+        this.lastShot = stack.peek();
+        this.previousShots.add(stack.peek());
+        previousNumShips = numShips;
+        return stack.pop();
+        
 
     }
 
@@ -169,12 +228,22 @@ public class G9AI_Smasher implements BattleshipsPlayer {
 //        
 //        lastShot = new Position(x, y);
 //        return lastShot;
-        return hunt();
-
+        if (hit) {
+            return attack();
+        } else {
+            return hunt();
+        }
     }
 
     @Override
     public void hitFeedBack(boolean hit, Fleet enemyShips) {
+        
+        this.numShips = enemyShips.getNumberOfShips();
+        if (numShips < previousNumShips) {
+            hit = false;
+        }else{
+            this.hit = hit;
+        }
 
         //if hit is true set global variable lasthit to false (true if hit)
         //Do nothing
@@ -187,8 +256,8 @@ public class G9AI_Smasher implements BattleshipsPlayer {
 
     @Override
     public void startRound(int round) {
-       nextX = 9;
-       nextY = 9;
+        nextX = 9;
+        nextY = 9;
     }
 
     @Override
@@ -200,4 +269,5 @@ public class G9AI_Smasher implements BattleshipsPlayer {
     public void endMatch(int won, int lost, int draw) {
         //Do nothing
     }
+
 }
