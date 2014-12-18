@@ -22,7 +22,7 @@ public class G9Factory implements tournament.player.PlayerFactory< battleship.in
 
     @Override
     public String getName() {
-        return "Badassss motha fucka AI";
+        return "G9_AI";
     }
 
     @Override

@@ -14,9 +14,8 @@ import tournament.player.PlayerFactory;
  */
 public class G9 {
 
-    
-    public static PlayerFactory<BattleshipsPlayer> getPlayerFactory(){
+    public static PlayerFactory<BattleshipsPlayer> getPlayerFactory() {
         return new G9Factory();
     }
-    
+
 }
